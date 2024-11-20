@@ -12,7 +12,12 @@ from .latent import LatentDiffusionManager, E, D
 
 
 class SDEBBDMManager(LatentDiffusionManager[Module, E, D]):
-    """Diffusion manager for the A-Bridge BBDM with algorithm in sec. 1 and 2 offered by Prof. Wang."""
+    """
+    Diffusion manager for the A-Bridge BBDM.
+    
+    - Parameters:
+        - c_lambda: The lambda value in `float` for A-Bridge.
+    """
 
     c_lambda: float
 
