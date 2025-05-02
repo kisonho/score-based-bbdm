@@ -114,6 +114,12 @@ To run examples, install the package first. The following command installs the p
 pip install -e .
 ```
 
+The package is also available on [PyPI](https://pypi.org/project/sde-bbdm/). You can install the package with the following command:
+
+```bash
+pip install sde-bbdm
+```
+
 ### Training Script
 Use `train.py` to train a Score-Based Image-to-Image Brownian Bridge model. The script supports training in image space and latent space. The following examples show how to train the model in image space and latent space using edge2shoes dataset.
 
