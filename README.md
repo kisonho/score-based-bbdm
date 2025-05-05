@@ -12,6 +12,9 @@ This is the official implementation for the paper Score-Based Image-to-Image Bro
 * [PyTorch](https://pytorch.org) >= 2.0.1
 * [torchmanager-diffusion](https://github.com/kisonho/diffusion/) >= 1.0
 
+## Installation
+* PyPi: `pip install sde-bbdm`
+
 ## Usage
 The SDE-BBDM model can be trained in image space or latent space. The following examples show how to train the model in image space and latent space with `SDEBBDMManager` class.
 
@@ -19,13 +22,14 @@ The SDE-BBDM model can be trained in image space or latent space. The following 
 1. Initialize a UNet model with `networks.build_unet` function, create an optimizer and a loss function. The coeffient `c_lambda` can be set optionally. The `time_steps` is the number of diffusion steps.
 ```python
 import torch
-from sde_bbdm import networks
+from sde_bbdm import networks, nn
 from torchmanager import losses
 
 # load model
-model = networks.build_unet(3, 3)
+unet = networks.build(3, 3)
 c_lambda: float = ...
 time_steps: int = ...
+model = nn.ABridgeModule(unet, time_steps, c_lambda=c_lambda)
 
 # load optimizer and loss
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
@@ -36,11 +40,10 @@ loss_fn = losses.MAE()
 To train a Score-Based BBDM model in image space, compile `SDEBBDMManager` with the UNet model, optimizer, loss function.
 
 ```python
-from sde_bbdm import SDEBBDMManager as Manager
+from diffusion import Manager
 
 # compile manager
-time_steps: int = ...
-manager = Manager(model, time_steps, optimizer=optimizer, loss_fn=loss_fn)
+manager = Manager(model, optimizer=optimizer, loss_fn=loss_fn)
 ```
 
 3. Initialize dataset and callbacks
@@ -62,13 +65,12 @@ trained_model = manager.fit(dataset, epochs=epochs, callbacks=callback_list)
 ```
 
 ### Train SDE-BBDM in Latent Space
-To train a Score-Based BBDM model in latent space, compile `SDEBBDMManager` with pre-trained encoder and decoder loaded as `torch.nn.Module`.
+To train a Score-Based BBDM model in latent space, build `ABridgeModule` with pre-trained encoder and decoder loaded as `torch.nn.Module`.
 
 ```python
 encoder: torch.nn.Module = ...
 decoder: torch.nn.Module = ...
-
-manager = Manager(model, time_steps, optimizer=optimizer, loss_fn=loss_fn, c_lambda=c_lambda, encoder=encoder, decoder=decoder)
+model = nn.ABridgeModule(unet, time_steps, c_lambda=c_lambda, encoder=encoder, decoder=decoder)
 ```
 
 ### Evaluating the model
@@ -94,7 +96,8 @@ To evaluate the model using fast sampling, run `test` method by set `sampling_im
 
 ```python
 sampling_steps: list[int] = ...
-model.test(dataset, sampling_images=True, fast_sampling=True, sampling_steps=sampling_steps)
+model.fast_sampling_steps = sampling_steps
+manager.test(dataset, sampling_images=True, fast_sampling=True, sampling_steps=sampling_steps)
 ```
 
 ## Example Scripts Usage
@@ -108,11 +111,7 @@ pip install -r requirements.txt
 ```
 
 ### Install package
-To run examples, install the package first. The following command installs the package in editable mode.
-
-```bash
-pip install -e .
-```
+To run examples, install the package using pypi first.
 
 ### Training Script
 Use `train.py` to train a Score-Based Image-to-Image Brownian Bridge model. The script supports training in image space and latent space. The following examples show how to train the model in image space and latent space using edge2shoes dataset.
