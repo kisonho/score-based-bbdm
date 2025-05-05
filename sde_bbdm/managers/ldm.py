@@ -1,9 +1,10 @@
+from typing import Sequence
 from diffusion import scheduling, DiffusionData
 from diffusion.managers import DDPMManager
 from torch.nn.modules.module import Module
 from torchmanager import losses, metrics
 from torchmanager_core import devices, torch
-from torchmanager_core.typing import Any, Generic, Iterable, Module, Optional, TypeVar, Union
+from torchmanager_core.typing import Any, Generic, Module, Optional, TypeVar, Union
 
 from .latent import LatentDiffusionManager, E, D
 
@@ -83,7 +84,7 @@ class ConditionalLDMManager(LatentDiffusionManager[Module, E, D], DDPMManager[Mo
             self.condition_encoder = self.condition_encoder.module.to(cpu)  # type: ignore
         return super().reset(cpu)
 
-    def sampling(self, num_images: int, x_t: torch.Tensor, /, *, condition: Optional[torch.Tensor] = None, fast_sampling: bool = False, sampling_range: Optional[Union[Iterable[int], reversed, range]] = None, show_verbose: bool = False) -> list[torch.Tensor]:
+    def sampling(self, num_images: int, x_t: torch.Tensor, /, *, condition: Optional[torch.Tensor] = None, fast_sampling: bool = False, sampling_range: Optional[Union[Sequence[int], range]] = None, show_verbose: bool = False) -> list[torch.Tensor]:
         '''
         Samples a given number of images
 
@@ -119,9 +120,9 @@ class ConditionalLDMManager(LatentDiffusionManager[Module, E, D], DDPMManager[Mo
     def train_step(self, x_train: torch.Tensor, y_train: torch.Tensor) -> dict[str, float]:
         # enter latent space
         z_x = self.encode(x_train)
-        z_x = z_x if isinstance(z_x, torch.Tensor) else z_x[0]
+        z_x, *_ = (z_x,) if isinstance(z_x, torch.Tensor) else z_x
         z_y = self.encode(y_train) if self.condition_encoder is None else self.condition_encoder(y_train)
-        z_y = z_y if isinstance(z_y, torch.Tensor) else z_y[0]
+        z_y, *_ = (z_y,) if isinstance(z_y, torch.Tensor) else z_y
 
         # forward diffusion model
         return DDPMManager.train_step(self, z_x, z_y)
@@ -129,9 +130,9 @@ class ConditionalLDMManager(LatentDiffusionManager[Module, E, D], DDPMManager[Mo
     def test_step(self, x_test: torch.Tensor, y_test: torch.Tensor) -> dict[str, float]:
         # enter latent space
         z_x = self.encode(x_test)
-        z_x = z_x if isinstance(z_x, torch.Tensor) else z_x[0]
+        z_x, *_ = (z_x,) if isinstance(z_x, torch.Tensor) else z_x
         z_y = self.encode(y_test) if self.condition_encoder is None else self.condition_encoder(y_test)
-        z_y = z_y if isinstance(z_y, torch.Tensor) else z_y[0]
+        z_y, *_ = (z_y,) if isinstance(z_y, torch.Tensor) else z_y
 
         # forward diffusion model
         return DDPMManager.test_step(self, z_x, z_y)

@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import math
+from re import T
 from typing import Any, Optional, Sequence
 
 import numpy as np
@@ -410,7 +411,7 @@ class QKVAttention(nn.Module):
         return count_flops_attn(model, _x, y)
 
 
-class UNet(TimedModule):
+class OpenAIUNet(th.nn.Module):
     """
     The full UNet model with attention and timestep embedding.
     :param in_channels: channels in the input Tensor.
@@ -650,9 +651,6 @@ class UNet(TimedModule):
             nn.SiLU(),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )
-
-    def unpack_data(self, x_in: DiffusionData) -> tuple[Any, ...]:
-        return x_in.x, x_in.t
 
     def forward(self, x, timesteps: Optional[int] = None, context: Optional[th.Tensor] = None, y: Optional[th.Tensor] = None) -> th.Tensor:
         """
@@ -909,3 +907,11 @@ class EncoderUNetModel(nn.Module):
         else:
             h = h.type(x.dtype)
             return self.out(h)
+
+
+class TimedUNet(TimedModule, OpenAIUNet):
+    def unpack_data(self, x_in: DiffusionData) -> tuple[Any, ...]:
+        return x_in.x, x_in.t
+
+
+UNet = TimedUNet

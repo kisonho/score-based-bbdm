@@ -1,13 +1,14 @@
+import torch
 from diffusion import DiffusionData
-from torchmanager_core import torch
-from torchmanager_core.typing import Module, Optional, Sequence, Union
+from diffusion.nn import FastSamplingDiffusionModule, LatentDiffusionModule
+from typing import Optional, TypeVar, Union
 
-from .latent import LatentDiffusionManager, E, D
+Module = TypeVar('Module', bound=torch.nn.Module)
+E = TypeVar('E', bound=Optional[torch.nn.Module])
+D = TypeVar('D', bound=Optional[torch.nn.Module])
 
 
-class BBDMManager(LatentDiffusionManager[Module, E, D]):
-    """Diffusion manager for the BBDM."""
-
+class BBDMModule(LatentDiffusionModule[Module, E, D], FastSamplingDiffusionModule[Module]):
     def forward_diffusion(self, data: torch.Tensor, condition: Optional[torch.Tensor] = None, t: Optional[torch.Tensor] = None) -> tuple[
         DiffusionData, torch.Tensor]:
         # step1 create t
@@ -27,12 +28,13 @@ class BBDMManager(LatentDiffusionManager[Module, E, D]):
         objective = m_t * (condition - x_start) + delta_t ** 0.5 * noise
         return DiffusionData(xt, t), objective
 
-    def sampling(self, num_images: int, x_t: torch.Tensor, /, *, condition: Optional[torch.Tensor] = None, fast_sampling: bool = False, sampling_range: Optional[Union[Sequence[int], range]] = None, show_verbose: bool = False) -> list[torch.Tensor]:
-        x_t = condition if condition is not None else x_t
-        sampling_range = range(self.time_steps, 0, -1) if sampling_range is None else sampling_range
-        return super().sampling(num_images, x_t, condition=condition, fast_sampling=fast_sampling, sampling_range=sampling_range, show_verbose=show_verbose)
+    def sampling_step(self, data: DiffusionData, i: int, /, *, predicted_obj: Optional[torch.Tensor] = None, return_noise: bool = False) -> Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+        # fast sampling
+        if self.fast_sampling:
+            assert self.fast_sampling_steps is not None, "Fast sampling steps must be given."
+            tau, tau_minus_one = self.fast_sampling_steps[i], self.fast_sampling_steps[i - 1]
+            return self.fast_sampling_step(data, tau, tau_minus_one, return_noise=return_noise, predicted_obj=predicted_obj)
 
-    def sampling_step(self, data: DiffusionData, i: int, /, *, return_noise: bool = False, predicted_noise: Optional[torch.Tensor] = None) -> Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
         # m_t = t/T
         t = i
         m_t = t / self.time_steps
@@ -55,9 +57,9 @@ class BBDMManager(LatentDiffusionManager[Module, E, D]):
         c_yt = m_t_minus_one - m_t * (1 - m_t) / (1 - m_t_minus_one) * (delta_t_minus_one / delta_t)
         c_epst = (1 - m_t_minus_one) * delta_t_by_t_minus_one / delta_t
 
-        if predicted_noise is None: 
-            predicted_noise, _ = self.forward(data)
-            assert predicted_noise is not None, "Predicted noise must be given."
+        if predicted_obj is None: 
+            predicted_obj, _ = self.forward(data)
+            assert predicted_obj is not None, "Predicted noise must be given."
         # predict noise
 
         # initialize new noise
@@ -65,9 +67,9 @@ class BBDMManager(LatentDiffusionManager[Module, E, D]):
 
         # sampling equation
         assert data.condition is not None, "Condition must be given."
-        x_t_minus_one = c_xt * data.x + c_yt * data.condition - c_epst * predicted_noise + tilde_delta_t ** 0.5 * new_noise
+        x_t_minus_one = c_xt * data.x + c_yt * data.condition - c_epst * predicted_obj + tilde_delta_t ** 0.5 * new_noise
         # x_t_minus_one = c_xt * data.x + c_yt * data.condition - c_epst * predicted_noise
-        return (x_t_minus_one, predicted_noise) if return_noise else x_t_minus_one
+        return (x_t_minus_one, predicted_obj) if return_noise else x_t_minus_one
 
     def fast_sampling_step(self, data: DiffusionData, tau: int, tau_minus_one: int, /, *, return_noise: bool = False, predicted_obj: Optional[torch.Tensor] = None) -> Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
         # predict noise

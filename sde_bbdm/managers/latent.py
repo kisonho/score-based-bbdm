@@ -145,7 +145,7 @@ class LatentDiffusionManager(DiffusionManager[Module], Generic[Module, E, D], ab
         z_t = self.encode(x_t)
         z_t, _ = (z_t, None) if isinstance(z_t, torch.Tensor) else z_t
         z_condition = self.encode(condition)
-        z_condition, args = (z_condition, None) if isinstance(z_condition, torch.Tensor) else z_condition
+        z_condition, *args = (z_condition,) if isinstance(z_condition, torch.Tensor) else z_condition
 
         # sampling
         if fast_sampling:

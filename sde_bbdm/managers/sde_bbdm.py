@@ -2,22 +2,18 @@ import torch
 from torch.optim.optimizer import Optimizer as Optimizer
 from torchmanager.losses.loss import Loss
 from torchmanager.metrics.metric import Metric
-from diffusion import DiffusionData
+from diffusion import DiffusionData, Manager as DiffusionManager
 from torchmanager_core import torch
-from torchmanager_core.typing import Module, Optional, Sequence, Union
+from torchmanager_core.typing import Module, Optional, Sequence, TypeVar, Union
 import math
 
+from sde_bbdm.nn import ABridgeModule
 from .bbdm import BBDMManager
 from .latent import LatentDiffusionManager, E, D
 
 
 class SDEBBDMManager(LatentDiffusionManager[Module, E, D]):
-    """
-    Diffusion manager for the A-Bridge BBDM.
-    
-    - Parameters:
-        - c_lambda: The lambda value in `float` for A-Bridge.
-    """
+    """Diffusion manager for the A-Bridge BBDM with algorithm in sec. 1 and 2 offered by Prof. Wang."""
 
     c_lambda: float
 
@@ -75,6 +71,9 @@ class SDEBBDMManager(LatentDiffusionManager[Module, E, D]):
         assert data.condition is not None, "Condition must be given."
         if i == 1:
             x_t_minus_one: torch.Tensor = data.x - predicted_obj
+        elif i == self.time_steps:
+            noise = torch.randn_like(data.x, device=data.x.device, dtype=data.x.dtype)
+            x_t_minus_one: torch.Tensor = 0.9998552 * data.x + 0.0001447648 * (data.x - predicted_obj) - 0.0014142 * noise
         else:
             beta_t = T - t + 1
             gamma_t = math.log(T / beta_t)
@@ -203,3 +202,5 @@ class BBDMSpecialCaseManager(BBDMManager[Module, E, D]):
 
 
 BBDMSDELinerRefinedWithLambdaV2With1000 = SDEBBDMManager
+ABridge = TypeVar("ABridge", bound=ABridgeModule)
+ABridgeManager = DiffusionManager

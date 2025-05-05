@@ -91,23 +91,19 @@ def eval(configs: EvalConfigs, /, model: Optional[torch.nn.Module] = None) -> di
     # load dataset
     _, _, testing_dataset = configs.dataset.load(configs.data_dir, configs.batch_size, repeat=configs.repeat, device=configs.device)
 
-    # set fast sampling
-    if configs.fast_sampling:
-        # create fast sampling steps
-        num_timesteps = 1000 if configs.time_steps is None else configs.time_steps
+    # # create fast sampling steps
+    num_timesteps = 1000 if configs.time_steps is None else configs.time_steps
 
-        # case1
-        midsteps1: list[int] = torch.arange(num_timesteps, 904, step=-2).long().numpy().tolist()
-        midsteps2: list[int] = torch.arange(902, 1, step=-6).long().numpy().tolist()
-        steps = midsteps1 + midsteps2 + [1]
+    # case1
+    midsteps1: list[int] = torch.arange(num_timesteps, 904, step=-2).long().numpy().tolist()
+    midsteps2: list[int] = torch.arange(902, 1, step=-6).long().numpy().tolist()
+    steps = midsteps1 + midsteps2 + [1]
 
-        # combine two lists
-        steps = midsteps1 + midsteps2
-    else:
-        steps = None
+    # combine two lists
+    steps = midsteps1 + midsteps2
 
     # evaluation
-    result = manager.test(testing_dataset, sampling_images=True, device=configs.device, use_multi_gpus=configs.use_multi_gpus, show_verbose=configs.show_verbose, sampling_range=steps, fast_sampling=configs.fast_sampling)
+    result = manager.test(testing_dataset, sampling_images=True, device=configs.device, use_multi_gpus=configs.use_multi_gpus, show_verbose=configs.show_verbose, sampling_range=steps, fast_sampling=True)
     return result
 
 
