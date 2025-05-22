@@ -59,10 +59,11 @@ class ABridgeModule(LatentDiffusionModule[Module, E, D], FastSamplingDiffusionMo
         objective = m_t * (condition - x_start) + B_t * noise
         return DiffusionData(xt, t), objective
 
-    def sampling_step(self, data: DiffusionData, i: int, /, *, return_noise: bool = False, predicted_obj: Optional[torch.Tensor] = None) -> Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+    def sampling_step(self, data: DiffusionData, i: int, /, *, predicted_obj: Optional[torch.Tensor] = None, return_noise: bool = False) -> Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
         # check if fast sampling
         if self.fast_sampling_steps is not None:
             # get time steps
+            i = len(self.fast_sampling_steps) - i
             tau = self.fast_sampling_steps[i]
             tau_minus_one = self.fast_sampling_steps[i + 1] if i < len(self.fast_sampling_steps) - 1 else 0
 
@@ -75,10 +76,9 @@ class ABridgeModule(LatentDiffusionModule[Module, E, D], FastSamplingDiffusionMo
         assert data.condition is not None, "Condition must be given for A-Bridge."
 
         # m_t = t/T
-        t = i
+        t = data.t
         T = self.time_steps
         m_t = t / T
-        m_t = torch.full(tuple([data.x.shape[0]] + [1 for _ in range(len(data.x.shape[1:]))]), m_t, device=data.x.device)
 
         # replace random noise into condition for the first sampling step
         if t == T:
