@@ -2,6 +2,8 @@ from typing import Sequence, overload
 
 from .openai import OpenAIUNet, UNet
 
+__all__ = ["build", "build_unet", "OpenAIUNet", "UNet"]
+
 
 @overload
 def build(in_channels: int, out_channels: int, /, *, attention_resolutions: Sequence[int] = [32, 16, 8], channel_mult: Sequence[int] = [1, 4, 8]) -> OpenAIUNet: ...

@@ -1,7 +1,6 @@
 import argparse, diffusion, torchmanager
 from torchmanager.configs import Configs as _Configs
 from torchmanager_core import argparse, os, torch, view, _raise
-from torchmanager_core.typing import Optional, Union
 
 from sde_bbdm.version import DESCRIPTION
 
@@ -9,15 +8,15 @@ from sde_bbdm.version import DESCRIPTION
 class SDEBBDMEvalConfigs(_Configs):
     """Evaluation Configurations"""
     batch_size: int
-    c_lambda: Optional[float]
+    c_lambda: float | None
     data_dir: str
-    device: Optional[torch.device]
+    device: torch.device | None
     fast_sampling: bool
     model: str
     show_verbose: bool
-    time_steps: Optional[int]
+    time_steps: int | None
     use_multi_gpus: bool
-    vqgan_path: Optional[str]
+    vqgan_path: str | None
 
     def format_arguments(self) -> None:
         # format arguments
@@ -42,7 +41,7 @@ class SDEBBDMEvalConfigs(_Configs):
         view.logger.addHandler(console)
 
     @staticmethod
-    def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
+    def get_arguments(parser: argparse.ArgumentParser | argparse._ArgumentGroup = argparse.ArgumentParser()) -> argparse.ArgumentParser | argparse._ArgumentGroup:
         # experiment arguments
         parser.add_argument("data_dir", type=str, help="The dataset directory.")
         parser.add_argument("model", type=str, help="The path for a pre-trained PyTorch model or a torchmanager checkpoint, default is `None`.")

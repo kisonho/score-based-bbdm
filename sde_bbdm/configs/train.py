@@ -1,14 +1,13 @@
 import argparse, diffusion, os
 from diffusion.configs import TrainingConfigs
 from torchmanager_core import view
-from typing import Optional, Union
 
 from sde_bbdm.version import DESCRIPTION
 
 
 class SDEBBDMTrainingConfigs(TrainingConfigs):
     c_lambda: float
-    vqgan_path: Optional[str]
+    vqgan_path: str | None
 
     def format_arguments(self) -> None:
         super().format_arguments()
@@ -16,7 +15,7 @@ class SDEBBDMTrainingConfigs(TrainingConfigs):
         self.vqgan_path = os.path.normpath(self.vqgan_path) if self.vqgan_path is not None else None
 
     @staticmethod
-    def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
+    def get_arguments(parser: argparse.ArgumentParser | argparse._ArgumentGroup = argparse.ArgumentParser()) -> argparse.ArgumentParser | argparse._ArgumentGroup:
         parser = TrainingConfigs.get_arguments(parser)
         sde_bbdm_args = parser.add_argument_group("Score Based BBDM Arguments")
         sde_bbdm_args.add_argument("-l", "--c_lambda", type=float, default=2, help="The lambda for the loss function, default is 2.")

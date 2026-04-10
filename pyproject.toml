@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "sde_bbdm"
-version = "1.1"
-description = "Score-Based Image-to-Image Brownian Bridge (v1.1)"
+version = "1.2a1"
+description = "Score-Based Image-to-Image Brownian Bridge (v1.2 Alpha 1)"
 authors = []
 packages = [
     { include = "sde_bbdm" },
@@ -9,7 +9,7 @@ packages = [
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 torch = "^2.1.2"
 torchmanager = "^1.3"
 torchmanager-diffusion = "^1.1"

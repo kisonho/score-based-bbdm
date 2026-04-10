@@ -1,11 +1,13 @@
 import math, torch
 from diffusion import DiffusionData
 from diffusion.nn import FastSamplingDiffusionModule, LatentDiffusionModule
-from typing import Generic, Optional, TypeVar, Union
+from typing import Generic, TypeVar
 
 Module = TypeVar('Module', bound=torch.nn.Module)
-E = TypeVar('E', bound=Optional[torch.nn.Module])
-D = TypeVar('D', bound=Optional[torch.nn.Module])
+E = TypeVar('E', bound=torch.nn.Module | None)
+D = TypeVar('D', bound=torch.nn.Module | None)
+
+__all__ = ["ABridgeModule"]
 
 
 class ABridgeModule(LatentDiffusionModule[Module, E, D], FastSamplingDiffusionModule[Module], Generic[Module, E, D]):
@@ -36,7 +38,7 @@ class ABridgeModule(LatentDiffusionModule[Module, E, D], FastSamplingDiffusionMo
         data = DiffusionData(data.x, data.t)
         return super().forward(data)
 
-    def forward_diffusion(self, data: torch.Tensor, t: Optional[torch.Tensor] = None, /, condition: Optional[torch.Tensor] = None) -> tuple[
+    def forward_diffusion(self, data: torch.Tensor, t: torch.Tensor | None = None, /, condition: torch.Tensor | None = None) -> tuple[
         DiffusionData, torch.Tensor]:
         # enter latent space
         x_start = self.encode(data)
@@ -59,7 +61,7 @@ class ABridgeModule(LatentDiffusionModule[Module, E, D], FastSamplingDiffusionMo
         objective = m_t * (condition - x_start) + B_t * noise
         return DiffusionData(xt, t), objective
 
-    def sampling_step(self, data: DiffusionData, i: int, /, *, predicted_obj: Optional[torch.Tensor] = None, return_noise: bool = False) -> Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+    def sampling_step(self, data: DiffusionData, i: int, /, *, predicted_obj: torch.Tensor | None = None, return_noise: bool = False) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         # check if fast sampling
         if self.fast_sampling_steps is not None:
             # get time steps
@@ -111,7 +113,7 @@ class ABridgeModule(LatentDiffusionModule[Module, E, D], FastSamplingDiffusionMo
             x_t_minus_one: torch.Tensor = c_xt * data.x - c_yt * data.condition - c_epst * predicted_obj - c_zt * new_noise
         return (x_t_minus_one, predicted_obj) if return_noise else x_t_minus_one
 
-    def fast_sampling_step(self, data: DiffusionData, tau: int, tau_minus_one: int, /, *, return_noise: bool = False, predicted_obj: Optional[torch.Tensor] = None) -> Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+    def fast_sampling_step(self, data: DiffusionData, tau: int, tau_minus_one: int, /, *, return_noise: bool = False, predicted_obj: torch.Tensor | None = None) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         # check condition
         assert data.condition is not None, "Condition must be given for A-Bridge."
         T = self.time_steps

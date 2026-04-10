@@ -23,7 +23,7 @@ class ReduceLROnPlateau(FrequencyCallback):
 
     def __init__(self, monitor: str, monitor_type: MonitorType, *args: Any, freq: Frequency = Frequency.EPOCH, **kwargs: Any) -> None:
         super().__init__(freq)
-        self.__lr_scheduler = _LRScheduler(*args, mode=monitor_type.name.lower(), **kwargs)
+        self.__lr_scheduler = _LRScheduler(*args, mode=monitor_type.name.lower(), **kwargs) # type: ignore
         self.monitor = monitor
 
     def _update(self, result: Any) -> None:
