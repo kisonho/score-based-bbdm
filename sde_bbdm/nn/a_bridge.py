@@ -78,7 +78,7 @@ class ABridgeModule(LatentDiffusionModule[Module, E, D], FastSamplingDiffusionMo
         assert data.condition is not None, "Condition must be given for A-Bridge."
 
         # m_t = t/T
-        t = data.t
+        t = i
         T = self.time_steps
         m_t = t / T
 
